@@ -15,3 +15,11 @@ pip install yroom
 ## API
 
 See `yroom.pyi`.
+
+## Development
+
+[Maturin](https://www.maturin.rs) can be used to build `Yroom` inside a virtual environment.
+
+```
+maturin develop
+```
