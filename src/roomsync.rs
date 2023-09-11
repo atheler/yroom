@@ -5,7 +5,7 @@ use std::{
 
 use pyo3::{
     prelude::*,
-    types::{PyBytes, PyDict, PyList},
+    types::{PyBytes, PyDict, PyList, PyBool},
 };
 
 use lib0::{
@@ -235,6 +235,8 @@ pub struct YRoomMessage {
     pub payloads: PyObject,
     #[pyo3(get)]
     pub broadcast_payloads: PyObject,
+    #[pyo3(get)]
+    pub has_edits: PyObject,
 }
 
 fn make_payloads(py: Python, payloads: &[Vec<u8>]) -> PyObject {
@@ -242,17 +244,18 @@ fn make_payloads(py: Python, payloads: &[Vec<u8>]) -> PyObject {
 }
 
 impl YRoomMessage {
-    fn from_payloads(payloads: &[Vec<u8>], broadcast_payloads: &[Vec<u8>]) -> YRoomMessage {
+    fn from_payloads(payloads: &[Vec<u8>], broadcast_payloads: &[Vec<u8>], has_edits: bool) -> YRoomMessage {
         Python::with_gil(|py| YRoomMessage {
             payloads: make_payloads(py, payloads),
             broadcast_payloads: make_payloads(py, broadcast_payloads),
+            has_edits: PyBool::new(py, has_edits).into(),
         })
     }
 }
 
 impl Default for YRoomMessage {
     fn default() -> Self {
-        YRoomMessage::from_payloads(&[], &[])
+        YRoomMessage::from_payloads(&[], &[], false)
     }
 }
 
@@ -360,7 +363,7 @@ impl YRoomManager {
 
     pub fn disconnect(&mut self, room: String, conn_id: u64) -> YRoomMessage {
         let broadcast_payload = self.get_room(&room).disconnect(conn_id);
-        YRoomMessage::from_payloads(&[], &broadcast_payload)
+        YRoomMessage::from_payloads(&[], &broadcast_payload, false)
     }
 
     pub fn has_room(&self, room: String) -> bool {
@@ -534,6 +537,7 @@ impl YRoom {
         Python::with_gil(|py| YRoomMessage {
             payloads: make_payloads(py, &payloads),
             broadcast_payloads: make_payloads(py, &[]),
+            has_edits: PyBool::new(py, false).into(),
         })
     }
 
@@ -563,6 +567,7 @@ impl YRoom {
             self.settings.disable_pipelining,
             decoder.document_name.clone(),
         );
+        let mut has_edits = false;
 
         decoder.for_each(|message_result| match message_result {
             Ok(message) => match message {
@@ -600,6 +605,7 @@ impl YRoom {
                     }
                 }
                 Message::Sync(SyncMessage::Update(data)) => {
+                    has_edits = true;
                     let update = Update::decode_v1(&data);
                     match update {
                         Ok(update) => {
@@ -657,7 +663,7 @@ impl YRoom {
                 log::warn!("Bad message from connection {}: {:?}", conn_id, err);
             }
         });
-        YRoomMessage::from_payloads(&sync_encoder.to_vecs(), &update_encoder.to_vecs())
+        YRoomMessage::from_payloads(&sync_encoder.to_vecs(), &update_encoder.to_vecs(), has_edits)
     }
 
     pub fn disconnect(&mut self, conn_id: u64) -> Vec<Vec<u8>> {

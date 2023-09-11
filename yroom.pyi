@@ -6,10 +6,12 @@ class YRoomMessage:
     `payload` is a message that should be sent to the connection that sent the message.
     `broadcast_payload` is a message that should be sent to all connections in the room.
     Either or both of the members can be of zero length and then must not be sent.
+    `has_edits` flag indicates if data changes occurred. Does not include awareness updates.
     """
 
     payloads: List[bytes]
     broadcast_payloads: List[bytes]
+    has_edits: bool
 
 class YRoomSettings(TypedDict):
     wire_version: int  # The Yjs encoding/decoding version to use (1 or 2, default: 1)
