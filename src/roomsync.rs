@@ -263,8 +263,8 @@ impl Default for YRoomMessage {
 impl YRoomMessage {
     pub fn __str__(&self) -> String {
         format!(
-            "YRoomMessage(payloads: {}, broadcast_payloads: {})",
-            self.payloads, self.broadcast_payloads
+            "YRoomMessage(payloads: {}, broadcast_payloads: {}, has_edits{})",
+            self.payloads, self.broadcast_payloads, self.has_edits
         )
     }
 
