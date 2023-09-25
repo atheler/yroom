@@ -5,7 +5,7 @@ use std::{
 
 use pyo3::{
     prelude::*,
-    types::{PyBytes, PyDict, PyList, PyBool},
+    types::{PyBytes, PyDict, PyList},
 };
 
 use lib0::{
@@ -248,7 +248,7 @@ impl YRoomMessage {
         Python::with_gil(|py| YRoomMessage {
             payloads: make_payloads(py, payloads),
             broadcast_payloads: make_payloads(py, broadcast_payloads),
-            has_edits: PyBool::new(py, has_edits).into(),
+            has_edits: has_edits.into_py(py),
         })
     }
 }
@@ -263,7 +263,7 @@ impl Default for YRoomMessage {
 impl YRoomMessage {
     pub fn __str__(&self) -> String {
         format!(
-            "YRoomMessage(payloads: {}, broadcast_payloads: {}, has_edits{})",
+            "YRoomMessage(payloads: {}, broadcast_payloads: {}, has_edits: {})",
             self.payloads, self.broadcast_payloads, self.has_edits
         )
     }
@@ -537,7 +537,7 @@ impl YRoom {
         Python::with_gil(|py| YRoomMessage {
             payloads: make_payloads(py, &payloads),
             broadcast_payloads: make_payloads(py, &[]),
-            has_edits: PyBool::new(py, false).into(),
+            has_edits: false.into_py(py),
         })
     }
 
@@ -592,6 +592,7 @@ impl YRoom {
                     }
                 }
                 Message::Sync(SyncMessage::SyncStep2(data)) => {
+                    has_edits = true;
                     let update = match self.settings.protocol_version {
                         ProtocolVersion::V1 => Update::decode_v1(&data),
                         ProtocolVersion::V2 => Update::decode_v2(&data),
