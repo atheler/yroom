@@ -592,7 +592,6 @@ impl YRoom {
                     }
                 }
                 Message::Sync(SyncMessage::SyncStep2(data)) => {
-                    has_edits = true;
                     let update = match self.settings.protocol_version {
                         ProtocolVersion::V1 => Update::decode_v1(&data),
                         ProtocolVersion::V2 => Update::decode_v2(&data),
@@ -604,9 +603,9 @@ impl YRoom {
                         }
                         Err(e) => log::error!("Error decoding sync step 2: {}", e),
                     }
+                    has_edits = true;
                 }
                 Message::Sync(SyncMessage::Update(data)) => {
-                    has_edits = true;
                     let update = Update::decode_v1(&data);
                     match update {
                         Ok(update) => {
@@ -617,6 +616,7 @@ impl YRoom {
                         }
                         Err(e) => log::error!("Error decoding update: {}", e),
                     }
+                    has_edits = true;
                 }
                 Message::Auth(_) => {
                     // TODO: check this. Always reply with permission granted
